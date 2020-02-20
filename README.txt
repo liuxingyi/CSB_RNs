@@ -5,11 +5,15 @@ Parameters processed by the chip(GEO Acession,platfoem,classcification identific
 The TSV network file obtained from the input STRING database of differential genes is imported into excel and converted into TXT file)
 
 #GSEGetted<-"GSE28735"
+##The GSE number of the data is set here, and the input number is in the format of gsexxxxx. The script will compose the url address based on the input number, visit the FTP server of ncbi, and complete the download of the data
 #GSEplatform<-"GPL6244"
+##GPLxxxxx is the serial number of the chip platform associated with the GEO number. The corresponding information in this part will be given in the introduction page of the gse. The script package will be given in the config_file/chip_platform file directory
 #sampleCategory<-c(rep(c(1,0),times=45))
+
 #p_yours<-0.01
 #fc_yours<-1.5
-string_interactions.tsv default node.txt[This file needs to be placed in.. / result/GSExxxxx]
+#string_interactions.tsv default node.txt[This file needs to be placed in.. / result/GSExxxxx]
+
 
 
 
