@@ -1,9 +1,6 @@
-# PDAC-profilePPI
-
-
+# CSB_RNs
 
 Parameter Settings for the start of the script
-
 Parameters processed by the chip(GEO Acession,platfoem,classcification identification,p threshold value,fold change threshold value,
 The TSV network file obtained from the input STRING database of differential genes is imported into excel and converted into TXT file)
 
@@ -19,7 +16,7 @@ string_interactions.tsv default node.txt[This file needs to be placed in.. / res
 The results you want can be stored as GSE Acession in the bin parent directory result folder
 
 2020/01/01  20:13    <DIR>          BP
-2020/01/01  20:12           688,324 GSE28735matFC_P.txt
+2020/01/01  20:12           688,324 GSE28735matFC_P.txt 
 2020/01/01  20:12           638,978 GSE28735_blue_red2.pdf
 2020/01/01  20:12             8,849 GSE28735_diffgene_0.01_1.5.txt
 2020/01/01  20:12             3,343 GSE28735_downgene_0.01_1.5.txt
