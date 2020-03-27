@@ -6,19 +6,26 @@ Procedure flow for drug target discovery
 profilerFrame <- get.GEO.data(GEO.acession = "28735",platfrom = "GPL6244")
 #profilerFrame is the data.frame data type, behavioral gene, and gene expression profile data listed in the sample.
 #There are not many chip platforms that can be annotated automatically, so you can experiment and do it yourself.tabel.1
+profilerFrame
 ```
+<div align=center>
+  <img width="1000" src="https://github.com/liuxingyi/bioinformatics/blob/master/pictures/data_1.png"/>
+</div>
 
 ### 2、Plot the boxplot plot to observe the data outline
 ```
 boxplot(profilerFrame,col="gray",xlab="samples",ylab="express label",main="expression quentity boxplt")
 ```
+<div align=center>
+  <img width="1000" src="https://github.com/liuxingyi/bioinformatics/blob/master/pictures/data_2.png"/>
+</div>
 ### 3、Filter the data according to the entropy value, remove the blank rows, all 0 rows
 ```
 profilerFramecleaned<-geneentropyfilter(profilerFrame)
 ```
 ### 4、The expression profile data were analyzed according to the classification
 ```
-profileData <- analysisIt(profilerFramecleaned,sample.label = c(rep(c(1,0),times=45)))
+profileData <- analysisIt(profilerFrame,sample.label = c(rep(c(1,0),times=45)))
 ```
 ### 5、Draw a volcano map according to the threshold
 ```
