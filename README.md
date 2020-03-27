@@ -13,12 +13,14 @@ profilerFrame
 </div>
 
 ### 2、Plot the boxplot plot to observe the data outline
+
 ```
 boxplot(profilerFrame,col="gray",xlab="samples",ylab="express label",main="expression quentity boxplt")
 ```
 <div align=center>
   <img width="1000" src="https://github.com/liuxingyi/bioinformatics/blob/master/pictures/data_2.png"/>
 </div>
+
 ### 3、Filter the data according to the entropy value, remove the blank rows, all 0 rows
 ```
 profilerFramecleaned<-geneentropyfilter(profilerFrame)
@@ -28,14 +30,25 @@ profilerFramecleaned<-geneentropyfilter(profilerFrame)
 profileData <- analysisIt(profilerFrame,sample.label = c(rep(c(1,0),times=45)))
 ```
 ### 5、Draw a volcano map according to the threshold
+
 ```
 volcanoPlot(profileData)
 ```
+<div align=center>
+  <img width="1000" src="https://github.com/liuxingyi/bioinformatics/blob/master/pictures/data_3.png"/>
+</div>
+
 ### 5、Plot the barplot of enrichment analysis
+
 ```
 geneSet <- rownames(profileData@data)[profileData@selected.gene]
 plotGOtermsbarplot(geneSet = geneSet)
 ```
+
+<div align=center>
+  <img width="1000" src="https://github.com/liuxingyi/bioinformatics/blob/master/pictures/data_4.png"/>
+</div>
+
 **appendix**
 
 table.1 Chip platform that can be annotated
