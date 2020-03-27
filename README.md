@@ -1,6 +1,6 @@
 # CSB_RNs
 Procedure flow for drug target discovery
-## example codes
+## 一、example codes
 ### 1、Download the chip data in the GEO database and annotate it
 ```
 profilerFrame <- get.GEO.data(GEO.acession = "28735",platfrom = "GPL6244")
@@ -35,7 +35,7 @@ profileData <- analysisIt(profilerFrame,sample.label = c(rep(c(1,0),times=45)))
 volcanoPlot(profileData)
 ```
 <div align=center>
-  <img width="1000" src="https://github.com/liuxingyi/bioinformatics/blob/master/pictures/data_3.png"/>
+  <img width="700" src="https://github.com/liuxingyi/bioinformatics/blob/master/pictures/data_3.png"/>
 </div>
 
 ### 5、Plot the barplot of enrichment analysis
@@ -46,12 +46,31 @@ plotGOtermsbarplot(geneSet = geneSet)
 ```
 
 <div align=center>
-  <img width="1000" src="https://github.com/liuxingyi/bioinformatics/blob/master/pictures/data_4.png"/>
+  <img width="700" src="https://github.com/liuxingyi/bioinformatics/blob/master/pictures/data_4.png"/>
 </div>
 
-**appendix**
+### 6、Calculate the parameters of the protein network exported from the string database
 
-table.1 Chip platform that can be annotated
+```
+net <- read.table("./string_interactions.tsv",header = T)
+netParameters <-getNetParameters(net)
+CSB_RNs(profileData,netParameters)
+```
+<div align=center>
+  <img width="700" src="https://github.com/liuxingyi/bioinformatics/blob/master/pictures/data_5.png"/>
+</div>
+
+
+## 二、installation
+```
+install.packages("devtools")
+library(devtools)
+install_github("liuxingyi/CSB_RNs")
+```
+
+## **appendix**
+
+### table.1 Chip platform that can be annotated
 
 gpl |Organism | bioc_package
 ----|----------|---------
