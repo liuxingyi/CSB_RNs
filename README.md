@@ -66,6 +66,9 @@ CSB_RNs(profileData,netParameters)
 install.packages("devtools")
 library(devtools)
 install_github("liuxingyi/CSB_RNs")
+
+#load installed packages
+library("targetFinder")
 ```
 
 ## **appendix**
