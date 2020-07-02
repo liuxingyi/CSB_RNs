@@ -65,10 +65,6 @@ plotGOtermsbarplot <-function(geneSet,
                                            levels=c("molecular function", "cellular component", "biological process")))
 
     labelSet <- as.character(go_enrich_df$Description[as.numeric(go_enrich_df$Description)])
-    for(line in seq(1,length(labelSet)))
-      {
-        labelSet[line] <- shorten_names(labelSet[line],n_word = label.min.n.words,n_char = label.min.n.char)
-    }
     labels <- as.vector(labelSet)
     names(labels)<-as.factor(rev(seq(1,length(labels))))
 
