@@ -11,7 +11,7 @@
 
 plotGOtermsbarplot <-function(geneSet,
                               label.min.n.words = 4,
-                              label.min.n.char = 20,
+                              label.min.n.char = 40,
                               display.number = 10,
                               Species.label="hsa",
                               enrich.pvalue = 0.05,
@@ -31,7 +31,7 @@ plotGOtermsbarplot <-function(geneSet,
     }
     suppressMessages(library("org.Hs.eg.db"))
     k <- keys(org.Hs.eg.db,keytype = "SYMBOL")
-    listSymolEntraz <- select(org.Hs.eg.db,key=k,columns=c("ENTREZID","SYMBOL","ENSEMBL"),keytype="SYMBOL")
+    listSymolEntraz <- bitr(k, fromType="SYMBOL", toType=c("ENTREZID","ENSEMBL"), OrgDb="org.Hs.eg.db");
     ourGeneEntrazId<-listSymolEntraz[listSymolEntraz$SYMBOL%in%geneSet,]$ENTREZID
     if(Species.label == "hsa") OrgDb="org.Hs.eg.db"
     egoBP<- enrichGO(OrgDb = OrgDb,
@@ -64,17 +64,27 @@ plotGOtermsbarplot <-function(geneSet,
                                type=factor(c(rep("biological process", display_number[1]), rep("cellular component", display_number[2]),rep("molecular function", display_number[3])),
                                            levels=c("molecular function", "cellular component", "biological process")))
 
-    labelSet <- as.character(go_enrich_df$Description[as.numeric(go_enrich_df$Description)])
-    labels <- as.vector(labelSet)
-    names(labels)<-as.factor(rev(seq(1,length(labels))))
 
     if(plot.type == 1)
     {
+      
+      go_enrich_df <- rbind(go_enrich_df[seq(1,display_number[1]),][order(go_enrich_df[seq(1,display_number[1]),]$FDR,decreasing = F),],
+                            go_enrich_df[seq(display_number[1]+1,2*display_number[2]),][order(go_enrich_df[seq(display_number[1]+1,2*display_number[2]),]$FDR,decreasing = F),],
+                            go_enrich_df[seq(2*display_number[1]+1,3*display_number[3]),][order(go_enrich_df[seq(2*display_number[1]+1,3*display_number[3]),]$FDR,decreasing = F),])
+      labelSet <- as.character(go_enrich_df$Description)
+      newlabelSet <- NULL
+      for(i in seq(1,length(labelSet))){
+        newlabelSet <- c(newlabelSet,shorten_names(labelSet[i],n_word=label.min.n.words, n_char=label.min.n.char))
+      }
+      labelSet <- newlabelSet
+      labels <- as.vector(labelSet)
+      go_enrich_df$Description <- labels
+      #names(labels)<-as.factor(rev(seq(1,length(labels))))
       p <- ggplot(data=go_enrich_df, aes(x=factor(Description,level=rev(Description)), y=-log10(FDR), fill=type)) +
         geom_bar(stat="identity", width=0.8) +
         scale_fill_manual(values = CPCOLS) + theme_bw() +
         scale_x_discrete(labels=labels) +
-        xlab(xlab) + ylab(ylab) +ylim(0,max(-log10(go_enrich_df$FDR))+5)+labs(title=title)+
+        xlab(xlab) + ylab(ylab) +ylim(0,max(-log10(go_enrich_df$FDR))+20)+labs(title=title)+
         theme(axis.text=element_text(face = face, color = axis.text.color),
               axis.text.y = element_text(face = face, color=axis.text.color,size = axis.text.font.size),
               axis.text.x = element_text(face = face, color=axis.text.color,size = axis.text.font.size),
@@ -86,31 +96,25 @@ plotGOtermsbarplot <-function(geneSet,
               legend.title=element_blank()) +
         geom_text(aes(label=GeneNumber),hjust=0)
     }else if(plot.type == 2){
+      go_enrich_df <- rbind(go_enrich_df[seq(1,display_number[1]),][order(go_enrich_df[seq(1,display_number[1]),]$GeneNumber,decreasing = T),],
+                            go_enrich_df[seq(display_number[1]+1,2*display_number[2]),][order(go_enrich_df[seq(display_number[1]+1,2*display_number[2]),]$GeneNumber,decreasing = T),],
+                            go_enrich_df[seq(2*display_number[1]+1,3*display_number[3]),][order(go_enrich_df[seq(2*display_number[1]+1,3*display_number[3]),]$GeneNumber,decreasing = T),])
+      labelSet <- as.character(go_enrich_df$Description)
+      newlabelSet <- NULL
+      for(i in seq(1,length(labelSet))){
+        newlabelSet <- c(newlabelSet,shorten_names(labelSet[i],n_word=label.min.n.words, n_char=label.min.n.char))
+      }
+      labelSet <- newlabelSet
+      labels <- as.vector(labelSet)
+      go_enrich_df$Description <- labels
       p <- ggplot(data=go_enrich_df, aes(x=factor(Description,level=rev(Description)), y=GeneNumber, fill=type)) +
         geom_bar(stat="identity", width=0.8)  +
         scale_fill_manual(values = CPCOLS) + theme_bw() +
         scale_x_discrete(labels=labels) +
-        xlab(xlab) + ylab(ylab) +ylim(0,max(go_enrich_df$GeneNumber)+5)+labs(title=title)+
+        xlab(xlab) + ylab(ylab) +ylim(0,max(go_enrich_df$GeneNumber)+20)+labs(title=title)+
         theme(axis.text=element_text(face = face, color = axis.text.color),
               axis.text.y = element_text(face = face, color= axis.text.color,size = axis.text.font.size),
               axis.text.x = element_text(face = face, color= axis.text.color,size = axis.text.font.size),
-              axis.title.x = element_text(face = face,size = axis.title.font.size),
-              axis.title.y = element_text(face = face,size = axis.title.font.size),
-              axis.title  = element_text(face = face,size = axis.title.font.size),
-              title = element_text(size=14,face= face),
-              legend.text =element_text(face = face,size = legend.text.font.size),
-              legend.title=element_blank()) +
-        geom_text(aes(label=FDR),hjust=0)
-    }else if(plot.type == 3){
-      go_enrich_df<-go_enrich_df[order(go_enrich_df$type,go_enrich_df$GeneNumber,decreasing = T),]
-      p <- ggplot(data=go_enrich_df, aes(x=factor(Description,level=rev(Description)), y=GeneNumber, fill=type)) +
-        geom_bar(stat="identity", width=0.8) +
-        scale_fill_manual(values = CPCOLS) + theme_bw() +
-        scale_x_discrete(labels=labels) +
-        xlab(xlab) + ylab(ylab) +ylim(0,max(go_enrich_df$GeneNumber)+5)+labs(title=title)+
-        theme(axis.text=element_text(face = face, color=axis.text.color),
-              axis.text.y = element_text(face = face, color=axis.text.color,size = axis.text.font.size),
-              axis.text.x = element_text(face = face, color=axis.text.color,size = axis.text.font.size),
               axis.title.x = element_text(face = face,size = axis.title.font.size),
               axis.title.y = element_text(face = face,size = axis.title.font.size),
               axis.title  = element_text(face = face,size = axis.title.font.size),
@@ -126,10 +130,9 @@ plotGOtermsbarplot <-function(geneSet,
     }
 
 shorten_names <- function(x, n_word=3, n_char=10){
-
-    if (length(strsplit(x, " ")[[1]]) > n_word || (nchar(x) > 40))
+    if (length(strsplit(x, " ")[[1]]) > n_word || (nchar(x) > n_char))
     {
-        if (nchar(x) > 40) x <- substr(x, 1, 40)
+        if (nchar(x) > n_char) x <- substr(x, 1, n_char)
         x <- paste(paste(strsplit(x, " ")[[1]][1:min(length(strsplit(x," ")[[1]]), n_word)],
                          collapse=" "), "...", sep="")
         return(x)
