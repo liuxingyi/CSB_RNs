@@ -1,144 +1,119 @@
-#' Draw a bar chart for GO enrichment analysis
-#'
-#' @description According to the input geneSymol collection,
-#'  convert to entrazid and draw three types of bar charts.
-#' @param geneSet as.vector,gene dataset.
-#' @import Rgraphviz
-#' @importFrom clusterProfiler enrichGO
-#' @export plotGOtermsbarplot
-#' @author Xingyi Liu
+#读入mRNA、miRNA的数据表达谱
+library("edgeR")
+library("targetFinder")
+library(AnnotationHub)	#library导入需要使用的数据包
+library(org.Hs.eg.db)   #人类注释数据库
+library(clusterProfiler)
+library(dplyr)
+library(ggplot2)
+data <- read.csv("mRNACount.csv",header = T,row.names = 1)
+miRNAdata <- read.csv("miRNACount.csv",header = T,row.names = 1)
+lncRNAdata <- read.csv("lncRNACount.csv",header = T,row.names = 1)
+data <- round(data)
+lncRNAdata <- round(lncRNAdata)
+dataCleaned <- data[!rowSums(data)==0,]
+miRNAdata <- miRNAdata[!rowSums(miRNAdata)==0,]
+lncRNAdata <- lncRNAdata[!rowSums(lncRNAdata)==0,]
+#读入样本注释信息
+clinical <- read.table("clinacal.txt",header = T,row.names = 1)
+rownames(clinical) <- gsub("-",".",rownames(clinical))
+group <- as.factor(clinical[,1])
+dataCleaned <- dataCleaned[,match(rownames(clinical),substr(gsub("\\.","-",colnames(dataCleaned)),start = 1,stop = nchar(colnames(dataCleaned))-6))]
+colnames(dataCleaned) <- substr(colnames(dataCleaned),start = 1,stop = nchar(colnames(dataCleaned))-6)
+miRNAdata <- miRNAdata[,match(rownames(clinical),substr(gsub("\\.","-",colnames(miRNAdata)),start = 1,stop = nchar(colnames(miRNAdata))-6))]
+#starBase数据库miRNA和mRNA
+starBaseMiRnaMRNA <- read.table("ENCORI_hg19_CLIP-seq_all_allGene.txt",skip = 3,header=T)
+starBaselncRnaMRNA <- read.table("ENCORI_hg19_CLIP-seq_all_alllncRNA.txt",skip = 3,header=T,sep = "\t")
+starBaseMiRnaMRNA <- starBaseMiRnaMRNA[rowSums(starBaseMiRnaMRNA[,seq(15,21)])>4 & starBaseMiRnaMRNA[,22]>6 &starBaseMiRnaMRNA[,12]>6,]
+starBaselncRnaMRNA <- starBaselncRnaMRNA[starBaselncRnaMRNA[,17]>6 & starBaselncRnaMRNA[,10]>6,]
+#额外的编号对应信息
+emsembleAnno <- read.table("./hg19.fa",fill = T,sep = ";")
+ENSGENST <- cbind(substr(as.character(emsembleAnno[,1]),start = 9,stop = 23),substr(as.character(emsembleAnno[,2]),start =16,stop = 33))
 
-
-plotGOtermsbarplot <-function(geneSet,
-                              label.min.n.words = 4,
-                              label.min.n.char = 40,
-                              display.number = 10,
-                              Species.label="hsa",
-                              enrich.pvalue = 0.05,
-                              plot.type = 2,
-                              coord_flip =TRUE,
-                              CPCOLS = c("#2f5688","#0F1F95","#CC0000"),
-                              xlab = "GO term",
-                              ylab = "-log10(FDR)",
-                              title = "GO enrichment plot",
-                              face = "bold",
-                              axis.text.color = "gray40",
-                              axis.text.font.size = 12,
-                              axis.title.font.size = 14,
-                              legend.text.font.size = 10){
-    if (!requireNamespace("org.Hs.eg.db")) {
-        BiocManager::install("org.Hs.eg.db")
-    }
-    suppressMessages(library("org.Hs.eg.db"))
-    k <- keys(org.Hs.eg.db,keytype = "SYMBOL")
-    listSymolEntraz <- bitr(k, fromType="SYMBOL", toType=c("ENTREZID","ENSEMBL"), OrgDb="org.Hs.eg.db");
-    ourGeneEntrazId<-listSymolEntraz[listSymolEntraz$SYMBOL%in%geneSet,]$ENTREZID
-    if(Species.label == "hsa") OrgDb="org.Hs.eg.db"
-    egoBP<- enrichGO(OrgDb = OrgDb,
-                     gene = ourGeneEntrazId,
-                     ont = "BP",
-                     pvalueCutoff =  enrich.pvalue,
-                     readable= TRUE)
-    egoBPData<-data.frame(egoBP)
-    egoMF <- enrichGO(OrgDb = OrgDb,
-                      gene = ourGeneEntrazId,
-                      ont = "MF",
-                      pvalueCutoff =  enrich.pvalue,
-                      readable= TRUE)
-    egoMFData<-data.frame(egoMF)
-    egoCC <- enrichGO(OrgDb = OrgDb,
-                      gene = ourGeneEntrazId,
-                      ont = "CC",
-                      pvalueCutoff =  enrich.pvalue,
-                      readable= TRUE)
-    egoCCData<-data.frame(egoCC)
-    display_number<-c(rep(display.number,3))
-    ego_result_BP<-egoBPData[seq(1,display_number[1]),]
-    ego_result_CC<-egoCCData[seq(1,display_number[2]),]
-    ego_result_MF<-egoMFData[seq(1,display_number[3]),]
-
-    go_enrich_df <- data.frame(ID=c(ego_result_BP$ID, ego_result_CC$ID, ego_result_MF$ID),
-                               Description=c(ego_result_BP$Description, ego_result_CC$Description,ego_result_MF$Description),
-                               GeneNumber=c(ego_result_BP$Count, ego_result_CC$Count, ego_result_MF$Count),
-                               FDR=signif(as.numeric(as.vector(c(ego_result_BP$p.adjust, ego_result_CC$p.adjust,ego_result_MF$p.adjust))),3),
-                               type=factor(c(rep("biological process", display_number[1]), rep("cellular component", display_number[2]),rep("molecular function", display_number[3])),
-                                           levels=c("molecular function", "cellular component", "biological process")))
-
-
-    if(plot.type == 1)
-    {
-      
-      go_enrich_df <- rbind(go_enrich_df[seq(1,display_number[1]),][order(go_enrich_df[seq(1,display_number[1]),]$FDR,decreasing = F),],
-                            go_enrich_df[seq(display_number[1]+1,2*display_number[2]),][order(go_enrich_df[seq(display_number[1]+1,2*display_number[2]),]$FDR,decreasing = F),],
-                            go_enrich_df[seq(2*display_number[1]+1,3*display_number[3]),][order(go_enrich_df[seq(2*display_number[1]+1,3*display_number[3]),]$FDR,decreasing = F),])
-      labelSet <- as.character(go_enrich_df$Description)
-      newlabelSet <- NULL
-      for(i in seq(1,length(labelSet))){
-        newlabelSet <- c(newlabelSet,shorten_names(labelSet[i],n_word=label.min.n.words, n_char=label.min.n.char))
-      }
-      labelSet <- newlabelSet
-      labels <- as.vector(labelSet)
-      go_enrich_df$Description <- labels
-      #names(labels)<-as.factor(rev(seq(1,length(labels))))
-      p <- ggplot(data=go_enrich_df, aes(x=factor(Description,level=rev(Description)), y=-log10(FDR), fill=type)) +
-        geom_bar(stat="identity", width=0.8) +
-        scale_fill_manual(values = CPCOLS) + theme_bw() +
-        scale_x_discrete(labels=labels) +
-        xlab(xlab) + ylab(ylab) +ylim(0,max(-log10(go_enrich_df$FDR))+20)+labs(title=title)+
-        theme(axis.text=element_text(face = face, color = axis.text.color),
-              axis.text.y = element_text(face = face, color=axis.text.color,size = axis.text.font.size),
-              axis.text.x = element_text(face = face, color=axis.text.color,size = axis.text.font.size),
-              axis.title.x = element_text(face = face,size = axis.title.font.size),
-              axis.title.y = element_text(face = face,size = axis.title.font.size),
-              axis.title  = element_text(face = face,size = axis.title.font.size),
-              title = element_text(size= axis.title.font.size,face=face),
-              legend.text =element_text(face = face,size = legend.text.font.size),
-              legend.title=element_blank()) +
-        geom_text(aes(label=GeneNumber),hjust=0)
-    }else if(plot.type == 2){
-      go_enrich_df <- rbind(go_enrich_df[seq(1,display_number[1]),][order(go_enrich_df[seq(1,display_number[1]),]$GeneNumber,decreasing = T),],
-                            go_enrich_df[seq(display_number[1]+1,2*display_number[2]),][order(go_enrich_df[seq(display_number[1]+1,2*display_number[2]),]$GeneNumber,decreasing = T),],
-                            go_enrich_df[seq(2*display_number[1]+1,3*display_number[3]),][order(go_enrich_df[seq(2*display_number[1]+1,3*display_number[3]),]$GeneNumber,decreasing = T),])
-      labelSet <- as.character(go_enrich_df$Description)
-      newlabelSet <- NULL
-      for(i in seq(1,length(labelSet))){
-        newlabelSet <- c(newlabelSet,shorten_names(labelSet[i],n_word=label.min.n.words, n_char=label.min.n.char))
-      }
-      labelSet <- newlabelSet
-      labels <- as.vector(labelSet)
-      go_enrich_df$Description <- labels
-      p <- ggplot(data=go_enrich_df, aes(x=factor(Description,level=rev(Description)), y=GeneNumber, fill=type)) +
-        geom_bar(stat="identity", width=0.8)  +
-        scale_fill_manual(values = CPCOLS) + theme_bw() +
-        scale_x_discrete(labels=labels) +
-        xlab(xlab) + ylab(ylab) +ylim(0,max(go_enrich_df$GeneNumber)+20)+labs(title=title)+
-        theme(axis.text=element_text(face = face, color = axis.text.color),
-              axis.text.y = element_text(face = face, color= axis.text.color,size = axis.text.font.size),
-              axis.text.x = element_text(face = face, color= axis.text.color,size = axis.text.font.size),
-              axis.title.x = element_text(face = face,size = axis.title.font.size),
-              axis.title.y = element_text(face = face,size = axis.title.font.size),
-              axis.title  = element_text(face = face,size = axis.title.font.size),
-              title = element_text(size=14,face= face),
-              legend.text =element_text(face = face,size = legend.text.font.size),
-              legend.title=element_blank()) +
-        geom_text(aes(label=FDR),hjust=0)
-    }else {
-      stop("plot.type Error!!!")
-    }
-    if(coord_flip ==TRUE) p<-p+coord_flip()
-    return(p)
-    }
-
-shorten_names <- function(x, n_word=3, n_char=10){
-    if (length(strsplit(x, " ")[[1]]) > n_word || (nchar(x) > n_char))
-    {
-        if (nchar(x) > n_char) x <- substr(x, 1, n_char)
-        x <- paste(paste(strsplit(x, " ")[[1]][1:min(length(strsplit(x," ")[[1]]), n_word)],
-                         collapse=" "), "...", sep="")
-        return(x)
-    }
-    else
-    {
-        return(x)
-    }
+#差异分析
+edgeRT <- function(x,group,min.count = 10, min.total.count = 15){
+    y <- DGEList(counts=x,group=group)
+    keep <- filterByExpr(y,min.count = 10, min.total.count = 15)
+    y <- y[keep,,keep.lib.sizes=FALSE]
+    y <- calcNormFactors(y)
+    design <- model.matrix(~group)
+    y <- estimateDisp(y,design)
+    fit <- glmQLFit(y,design)
+    qlf <- glmQLFTest(fit,coef=2)
+    qlfTable <- cbind(qlf$table,FDR.BH=p.adjust(qlf$table[,4],method = "BH"))
+    return(qlfTable)
 }
+dataCleaned <- dataCleaned[,match(colnames(dataCleaned),rownames(clinical))]
+question1mRNA <- dataCleaned[,c("N.He.IR.1","N.He.IR.2","N.He.IR.3","N.He.Ctrl.1","N.He.Ctrl.2","N.He.Ctrl.3")]
+question1mRNAclinical <- clinical[c("N.He.IR.1","N.He.IR.2","N.He.IR.3","N.He.Ctrl.1","N.He.Ctrl.2","N.He.Ctrl.3"),]
+question1mRNAGroup <- as.factor(question1mRNAclinical[,2])
+mRNAqlfTable <- edgeRT(x=question1mRNA,group=question1mRNAGroup)
+mRNAqlfTableDiff <-mRNAqlfTable[mRNAqlfTable[,4]<0.05 &(mRNAqlfTable[,1]>log(3/2) | mRNAqlfTable[,1]<log(2/3)),]
+k<-keys(org.Hs.eg.db,keytype = "ENSEMBL")
+listSymolEntraz <- bitr(k, fromType="ENSEMBL", toType=c("ENTREZID","SYMBOL"), OrgDb="org.Hs.eg.db");
+ourGeneEntrazId<-listSymolEntraz[listSymolEntraz$ENSEMBL%in%rownames(mRNAqlfTableDiff),]$SYMBOL
+plotGOtermsbarplot(ourGeneEntrazId)
+
+miRNAqlfTable <- edgeRT(x=miRNAdata,group=group)
+miRNAqlfTableDiff <-miRNAqlfTable[(miRNAqlfTable[,5]<0.01),]
+lncRNAqlfTable <- edgeRT(x=lncRNAdata,group=group)
+lncRNAqlfTableDiff <-lncRNAqlfTable[(lncRNAqlfTable[,5]<0.01),]
+
+
+unique(rownames(miRNAqlfTableDiff))
+rownames(mRNAqlfTableDiff)
+lncRNAqlfTableDiffSelected  <- unique(ENSGENST[ENSGENST[,2] %in% rownames(lncRNAqlfTableDiff),1])
+#获取miRNA和mRNA网络
+ourMiM <- NULL
+for(i in seq(1,nrow(starBaseMiRnaMRNA))){
+    mRNA.tmp <- as.character(starBaseMiRnaMRNA[i,2]) %in% rownames(miRNAqlfTableDiff)
+    miRNA.tmp <- as.character(starBaseMiRnaMRNA[i,3]) %in% rownames(mRNAqlfTableDiff)
+    if(!(mRNA.tmp & miRNA.tmp))next
+    ourMiM <- rbind(ourMiM,starBaseMiRnaMRNA[i,])
+    print(paste0(i,"|",nrow(starBaseMiRnaMRNA)))
+}
+ourLnM <- NULL
+for(i in seq(1,nrow(starBaselncRnaMRNA))){
+    lncRNA.tmp <-  as.character(starBaselncRnaMRNA[i,3]) %in% lncRNAqlfTableDiffSelected
+    miRNA.tmp <- as.character(starBaselncRnaMRNA[i,2]) %in% rownames(miRNAqlfTableDiff)
+    if(!(mRNA.tmp & miRNA.tmp))next
+    ourLnM <- rbind(ourLnM,starBaselncRnaMRNA[i,])
+    print(paste0(i,"|",nrow(starBaselncRnaMRNA)))
+}
+ResTable <- merge(ourMiM,ourLnM,by="miRNAname")
+ResTable <- ResTable[,c("miRNAname","geneID.x","geneName.x","geneType.x","geneID.y","geneName.y","geneType.y")]
+ResTable <- unique(ResTable[ResTable[,7]=="lincRNA",])
+
+unique(paste0(ResTable$miRNAname,ResTable$geneID.x,ResTable$geneName.x,ResTable$geneType.x,ResTable$geneID.y,ResTable$geneName.y,ResTable$geneType.y))
+write.table(as.character(unique(ResTable$geneName.x)),file="ceRNAgene.txt",quote = F,row.names = F,col.names = F)
+oxygen_module <- read.table("oxygen_module.txt")
+write.table(as.character(oxygen_module[oxygen_module[,3]=="turquoise",2]),file="turquoise_gene.txt",quote = F,row.names = F,col.names = F)
+write.table(rbind(cbind(as.character(ResTable$miRNAname),geneSymbol=as.character(ResTable$geneID.x),as.character(ResTable$geneType.x)),cbind(as.character(ResTable$miRNAname),geneSymbol=as.character(ResTable$geneID.y),as.character(ResTable$geneType.y))),file="ceRNAnet.txt",quote = F,row.names = F,col.names = F)
+
+APPSelected <-ResTable[ResTable$geneName.x=="APP" | ResTable$geneName.x=="FOXO3" | ResTable$geneName.x=="FBN1",]
+APPSelectedW <- rbind(cbind(as.character(APPSelected$miRNAname),geneSymbol=as.character(APPSelected$geneName.x),as.character(APPSelected$geneType.x)),cbind(as.character(APPSelected$miRNAname),geneSymbol=as.character(APPSelected$geneName.y),as.character(APPSelected$geneType.y)))
+APPSelectedWV <- strsplit(unique(paste0(APPSelectedW[,1],":",APPSelectedW[,2],":",APPSelectedW[,3])),split = ":")
+APPSelectedWVC <- NULL
+for(i in seq(1,length(APPSelectedWV))){
+    APPSelectedWVC <- rbind(APPSelectedWVC,APPSelectedWV[[i]])
+}
+write.table(APPSelectedWVC,file="APPceRNAnet.txt",quote = F,row.names = F,col.names = F)
+
+
+gene159 <-read.table("107.txt",header=F)
+plotGOtermsbarplot(ourGeneEntrazId)
+k<-keys(org.Hs.eg.db,keytype = "SYMBOL")
+listSymolEntraz <- bitr(k, fromType="SYMBOL", toType=c("ENTREZID","ENSEMBL"), OrgDb="org.Hs.eg.db");
+ourGeneEntrazId<-listSymolEntraz[listSymolEntraz$ENSEMBL%in%rownames(mRNAqlfTableDiff),]$SYMBOL
+library(clusterProfiler)
+ekk <- enrichKEGG(gene= ourGeneEntrazId,organism  = 'hsa', pvalueCutoff = 0.05)
+dotplot(ekk,font.size=8)
+ego <- enrichGO(OrgDb="org.Hs.eg.db", gene = ourGeneEntrazId, ont = "BP", pvalueCutoff = 0.01, readable= TRUE) #GO富集分析
+dotplot(ego,showCategory=10,title="Enrichment GO Top10")
+
+BPdata <- read.table("BPenrichment.Process.tsv",header=F,fill =T,sep = "\t",quote = "")
+BPdataV <- NULL
+for(i in seq(1,10)){
+    BPdataV <- c(BPdataV,unlist(strsplit(as.character(BPdata[i,7]),split = "[,]")))
+}
+write.table(data.frame(table(BPdataV))[data.frame(table(BPdataV))[,2]>5,],file="BPdataV.txt",row.names = F,col.names = T,quote = F)
