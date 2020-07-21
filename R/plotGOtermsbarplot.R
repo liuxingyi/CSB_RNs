@@ -70,7 +70,8 @@ plotGOtermsbarplot <-function(geneSet,
                                FDR=signif(as.numeric(as.vector(c(ego_result_BP$p.adjust, ego_result_CC$p.adjust,ego_result_MF$p.adjust,ego_result_KEGG$p.adjust))),3),
                                type=factor(c(rep("biological process", display_number[1]), rep("cellular component", display_number[2]),rep("molecular function", display_number[3]),rep("kegg pathway",display_number[4])),
                                            levels=c("molecular function", "cellular component", "biological process","kegg pathway")))
-    write.table(go_enrich_df_writeted,file=paste0(prefixLable,".txt"),col.names = F,row.names = F,quote = F)
+    print("BP CC MF kegg")
+    write.table(rbind(ego_result_BP,ego_result_CC,ego_result_KEGG),file=paste0(prefixLable,".txt"),col.names = F,row.names = F,quote = F)
     go_enrich_df<-go_enrich_df_writeted
 
     if(plot.type == 1)
