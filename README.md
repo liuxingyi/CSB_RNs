@@ -139,4 +139,4 @@ GPL15380 |"Homo sapiens" |GGHumanMethCancerPanelv1
 GPL15396 |"Homo sapiens" |hthgu133b
 GPL17897 |"Homo sapiens" |hthgu133a
 
-
+## cite:Yan W, Liu X, Wang Y, Han S, Wang F, Liu X, Xiao F, Hu G. Identifying Drug Targets in Pancreatic Ductal Adenocarcinoma Through Machine Learning, Analyzing Biomolecular Networks, and Structural Modeling. Front Pharmacol. 2020 Apr 30;11:534. doi: 10.3389/fphar.2020.00534. PMID: 32425783; PMCID: PMC7204992.
